@@ -2,14 +2,14 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent" >
-   
+
     <ListView
         android:id="@+id/bt_list"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_margin="16dp" />
-    
-     <Button
+
+    <Button
         android:id="@+id/fresh"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -19,5 +19,16 @@
         android:layout_margin="16dp"
         android:onClick="onFreshClick"
         android:text="@string/fresh" />
+
+    <Button
+        android:id="@+id/connect"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:layout_below="@+id/fresh"
+        android:layout_margin="16dp"
+        android:onClick="onConnectClick"
+        android:text="@string/connect" />
 
 </RelativeLayout>

@@ -77,6 +77,10 @@ public class MyActivity extends Activity implements Callback {
 		mBTConnector.cancelDisCovery();
 		mBTConnector.startDiscovery();
 	}
+	
+	public void onConnectClick(View view){
+		mBTConnector.connect();
+	}
 
 	@Override
 	protected void onDestroy() {

@@ -1,12 +1,15 @@
 package com.mumu.bluetooth;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -17,6 +20,8 @@ public class BTConnector {
 
 	private static final String TAG = "BTConnector";
 
+	static final String SPP_UUID = "00001101-0000-1000-8000-00805F9B34FB";
+
 	private String TARGET_DEVICE_NAME = "";// "bt-mumu";
 
 	private String TARGET_DEVICE_PIN = "1234";
@@ -26,11 +31,11 @@ public class BTConnector {
 	private BluetoothDevice mDevice;
 
 	private Context mContext;
-	
-	private Map<String,BluetoothDevice> mFoundDeviceMap;
-	
+
+	private Map<String, BluetoothDevice> mFoundDeviceMap;
+
 	private Callback mCallback;
-	
+
 	public BTConnector(Context context) {
 		init(context);
 	}
@@ -59,9 +64,9 @@ public class BTConnector {
 			if (BluetoothDevice.ACTION_FOUND.equals(action)) {
 				mDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
 				String addr = mDevice.getAddress();
-				if(!mFoundDeviceMap.containsKey(addr)){
+				if (!mFoundDeviceMap.containsKey(addr)) {
 					mFoundDeviceMap.put(addr, mDevice);
-					if(mCallback != null){
+					if (mCallback != null) {
 						mCallback.onListDataChange(mFoundDeviceMap.values());
 					}
 				}
@@ -71,9 +76,9 @@ public class BTConnector {
 			} else if (BluetoothDevice.ACTION_NAME_CHANGED.equals(action)) {
 				mDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
 				String addr = mDevice.getAddress();
-				if(mFoundDeviceMap.containsKey(addr)){
+				if (mFoundDeviceMap.containsKey(addr)) {
 					mFoundDeviceMap.put(addr, mDevice);
-					if(mCallback != null){
+					if (mCallback != null) {
 						mCallback.onListDataChange(mFoundDeviceMap.values());
 					}
 				}
@@ -127,7 +132,7 @@ public class BTConnector {
 		if (context != null) {
 			mContext = context;
 		}
-		mFoundDeviceMap = new HashMap<String,BluetoothDevice>();
+		mFoundDeviceMap = new HashMap<String, BluetoothDevice>();
 		bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 		if (!bluetoothAdapter.isEnabled()) {
 			bluetoothAdapter.enable();
@@ -139,29 +144,40 @@ public class BTConnector {
 		mContext.registerReceiver(receiver, filter);
 	}
 
-	public void startDiscovery(){
+	public void startDiscovery() {
 		mFoundDeviceMap.clear();
-		if(mCallback != null){
+		if (mCallback != null) {
 			mCallback.onListDataChange(null);
 		}
 		bluetoothAdapter.startDiscovery();
 	}
-	
-	public void cancelDisCovery(){
+
+	public void cancelDisCovery() {
 		bluetoothAdapter.cancelDiscovery();
 	}
-	
+
+	public void connect() {
+		UUID uuid = UUID.fromString(SPP_UUID);
+		try {
+			BluetoothSocket btSocket = mDevice.createRfcommSocketToServiceRecord(uuid);
+			Log.d(TAG, "connecting...");
+			btSocket.connect();
+		} catch (IOException e) {
+			Log.e(TAG, Log.getStackTraceString(e));
+		}
+	}
+
 	public void release() {
 		cancelDisCovery();
 		mFoundDeviceMap.clear();
 		mContext.unregisterReceiver(receiver);
 	}
-	
-	public void setListListener(Callback callback){
+
+	public void setListListener(Callback callback) {
 		mCallback = callback;
 	}
-	
-	public static interface Callback{
+
+	public static interface Callback {
 		public void onListDataChange(Collection<BluetoothDevice> list);
 	}
 }
