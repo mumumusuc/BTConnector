@@ -3,10 +3,10 @@ package com.mumu.bluetooth;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
+import android.Manifest;
+import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
@@ -14,6 +14,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Build;
+import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 
 public class BTConnector {
@@ -26,6 +28,8 @@ public class BTConnector {
 
 	private String TARGET_DEVICE_PIN = "1234";
 
+	public static final int PERMISSION_REQUEST_CONSTANT = 1234;
+
 	private BluetoothAdapter bluetoothAdapter;
 
 	private BluetoothDevice mDevice;
@@ -35,6 +39,8 @@ public class BTConnector {
 	private Map<String, BluetoothDevice> mFoundDeviceMap;
 
 	private Callback mCallback;
+
+	BluetoothSocket mBTSocket;
 
 	public BTConnector(Context context) {
 		init(context);
@@ -78,6 +84,7 @@ public class BTConnector {
 				String addr = mDevice.getAddress();
 				if (mFoundDeviceMap.containsKey(addr)) {
 					mFoundDeviceMap.put(addr, mDevice);
+					Log.d(TAG, "mCallback = " + mCallback);
 					if (mCallback != null) {
 						mCallback.onListDataChange(mFoundDeviceMap.values());
 					}
@@ -85,7 +92,7 @@ public class BTConnector {
 				foundDevice = mDevice.getName().equals(TARGET_DEVICE_NAME);
 				Log.d(TAG, "name changed : " + mDevice.getAddress() + " -> " + mDevice.getName());
 
-			} else if (BluetoothDevice.ACTION_PAIRING_REQUEST.equals(action)) {
+			} else if ("android.bluetooth.device.action.PAIRING_REQUEST".equals(action)) {
 				mDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
 				Log.d(TAG, "pairing request : " + mDevice.getName());
 				if (TARGET_DEVICE_NAME.equals(mDevice.getName())) {
@@ -102,14 +109,13 @@ public class BTConnector {
 				mDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
 				switch (mDevice.getBondState()) {
 				case BluetoothDevice.BOND_BONDING:
-					Log.d(TAG, "正在配对......");
+					Log.d(TAG, "bonding......");
 					break;
 				case BluetoothDevice.BOND_BONDED:
-					Log.d(TAG, "完成配对");
-					// connect(device);//连接设备
+					Log.d(TAG, "boned");
 					break;
 				case BluetoothDevice.BOND_NONE:
-					Log.d(TAG, "取消配对");
+					Log.d(TAG, "unbond");
 				default:
 					break;
 				}
@@ -139,8 +145,12 @@ public class BTConnector {
 		}
 		IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
 		filter.addAction(BluetoothDevice.ACTION_NAME_CHANGED);
-		filter.addAction(BluetoothDevice.ACTION_PAIRING_REQUEST);
+		filter.addAction("android.bluetooth.device.action.PAIRING_REQUEST");
 		filter.addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
+		if (Build.VERSION.SDK_INT >= 6 && mContext instanceof Activity) {
+			ActivityCompat.requestPermissions((Activity)mContext, new String[] { Manifest.permission.ACCESS_FINE_LOCATION },
+					PERMISSION_REQUEST_CONSTANT);
+		}
 		mContext.registerReceiver(receiver, filter);
 	}
 
@@ -162,6 +172,11 @@ public class BTConnector {
 			BluetoothSocket btSocket = mDevice.createRfcommSocketToServiceRecord(uuid);
 			Log.d(TAG, "connecting...");
 			btSocket.connect();
+			if (btSocket.isConnected()) {
+				Log.i(TAG, "connected");
+				mBTSocket = btSocket;
+				send("hello world !");
+			}
 		} catch (IOException e) {
 			Log.e(TAG, Log.getStackTraceString(e));
 		}
@@ -171,10 +186,28 @@ public class BTConnector {
 		cancelDisCovery();
 		mFoundDeviceMap.clear();
 		mContext.unregisterReceiver(receiver);
+		if (mBTSocket != null && mBTSocket.isConnected()) {
+			try {
+				mBTSocket.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		mBTSocket = null;
 	}
 
 	public void setListListener(Callback callback) {
 		mCallback = callback;
+	}
+
+	public void send(String msg) {
+		if (msg != null && mBTSocket != null && mBTSocket.isConnected()) {
+			try {
+				mBTSocket.getOutputStream().write(msg.getBytes());
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
 	public static interface Callback {

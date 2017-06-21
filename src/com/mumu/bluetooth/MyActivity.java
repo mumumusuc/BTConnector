@@ -7,16 +7,21 @@ import java.util.List;
 
 import com.mumu.bluetooth.BTConnector.Callback;
 import com.mumu.bluetooth.R;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.bluetooth.BluetoothDevice;
+import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat.OnRequestPermissionsResultCallback;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
-public class MyActivity extends Activity implements Callback {
+public class MyActivity extends Activity implements Callback,OnRequestPermissionsResultCallback {
 
 	private static final String TAG = "Bt_Activity";
 
@@ -50,6 +55,9 @@ public class MyActivity extends Activity implements Callback {
 			if (!(convertView instanceof TextView)) {
 				TextView tv = new TextView(MyActivity.this);
 				tv.setPadding(8, 8, 8, 8);
+				tv.setBackgroundColor(Color.LTGRAY);
+				tv.setTextColor(Color.BLACK);
+				tv.setTextSize(28);
 				convertView = tv;
 			}
 			((TextView) convertView).setText(mDeviceList.get(position).getName());
@@ -88,6 +96,19 @@ public class MyActivity extends Activity implements Callback {
 		mBTConnector.release();
 	}
 
+	@SuppressLint("Override")
+	@Override
+	public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {  
+        switch (requestCode) {  
+            case BTConnector.PERMISSION_REQUEST_CONSTANT: {  
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {  
+                    //permission granted!  
+                }  
+                return;  
+            }  
+        }  
+    } 
+	
 	@Override
 	public void onListDataChange(Collection<BluetoothDevice> list) {
 		mDeviceList.clear();
