@@ -2,18 +2,18 @@ package com.mumu.bluetooth;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
+import com.mumu.bluetooth.BTConnector.BTHandle;
 import com.mumu.bluetooth.BTConnector.Callback;
 import com.mumu.bluetooth.R;
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.bluetooth.BluetoothDevice;
-import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.support.v4.app.ActivityCompat.OnRequestPermissionsResultCallback;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,7 +21,7 @@ import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
-public class MyActivity extends Activity implements Callback,OnRequestPermissionsResultCallback {
+public class MyActivity extends Activity implements Callback {
 
 	private static final String TAG = "Bt_Activity";
 
@@ -32,6 +32,10 @@ public class MyActivity extends Activity implements Callback,OnRequestPermission
 	private ListView mListView;
 
 	private List<BluetoothDevice> mDeviceList;
+	
+	private View mConnect,mDisconnect;
+	
+	private TextView mText;
 
 	private BaseAdapter mAdapter = new BaseAdapter() {
 
@@ -74,6 +78,10 @@ public class MyActivity extends Activity implements Callback,OnRequestPermission
 		mListView = (ListView) findViewById(R.id.bt_list);
 		mListView.setAdapter(mAdapter);
 
+		mConnect = findViewById(R.id.connect);
+		mDisconnect = findViewById(R.id.disconnect);
+		mText = (TextView) findViewById(R.id.text);
+		
 		mDeviceList = new ArrayList<BluetoothDevice>();
 
 		mBTConnector = new BTConnector(this);
@@ -87,7 +95,15 @@ public class MyActivity extends Activity implements Callback,OnRequestPermission
 	}
 	
 	public void onConnectClick(View view){
-		mBTConnector.connect();
+		mBTConnector.connect(null);
+		mConnect.setVisibility(View.GONE);
+		mDisconnect.setVisibility(View.VISIBLE);
+	}
+	
+	public void onDisconnectClick(View view){
+		mBTConnector.disconnect();
+		mConnect.setVisibility(View.VISIBLE);
+		mDisconnect.setVisibility(View.GONE);
 	}
 
 	@Override
@@ -95,19 +111,6 @@ public class MyActivity extends Activity implements Callback,OnRequestPermission
 		super.onDestroy();
 		mBTConnector.release();
 	}
-
-	@SuppressLint("Override")
-	@Override
-	public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {  
-        switch (requestCode) {  
-            case BTConnector.PERMISSION_REQUEST_CONSTANT: {  
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {  
-                    //permission granted!  
-                }  
-                return;  
-            }  
-        }  
-    } 
 	
 	@Override
 	public void onListDataChange(Collection<BluetoothDevice> list) {
@@ -117,4 +120,17 @@ public class MyActivity extends Activity implements Callback,OnRequestPermission
 		}
 		mAdapter.notifyDataSetChanged();
 	}
+
+	@Override
+	public void onDeviceConnected(BTHandle bthandle) {
+		bthandle.receive(mHanlder);
+	}
+	
+	Handler mHanlder = new Handler(Looper.getMainLooper()){
+		@Override
+		public void handleMessage(Message msg) {
+			Log.i("btconnector", msg.what+":"+((String)msg.obj));
+			mText.setText((String)msg.obj);
+		}
+	};
 }
