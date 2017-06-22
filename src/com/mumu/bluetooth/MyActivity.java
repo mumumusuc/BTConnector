@@ -20,6 +20,9 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
+import rx.Subscriber;
+import rx.functions.Action1;
 
 public class MyActivity extends Activity implements Callback {
 
@@ -32,10 +35,30 @@ public class MyActivity extends Activity implements Callback {
 	private ListView mListView;
 
 	private List<BluetoothDevice> mDeviceList;
-	
-	private View mConnect,mDisconnect;
-	
+
+	private View mConnect, mDisconnect;
+
 	private TextView mText;
+
+	private Subscriber<BTHandle> mSub = new Subscriber<BTHandle>() {
+		@Override
+		public void onCompleted() {
+
+		}
+
+		@Override
+		public void onError(Throwable arg0) {
+
+		}
+
+		@Override
+		public void onNext(BTHandle arg0) {
+			if(arg0 != null){
+				Toast.makeText(getApplicationContext(), "connected", Toast.LENGTH_SHORT).show();
+				arg0.receive(MyActivity.this.mHandler);
+			}
+		}
+	};
 
 	private BaseAdapter mAdapter = new BaseAdapter() {
 
@@ -81,7 +104,7 @@ public class MyActivity extends Activity implements Callback {
 		mConnect = findViewById(R.id.connect);
 		mDisconnect = findViewById(R.id.disconnect);
 		mText = (TextView) findViewById(R.id.text);
-		
+
 		mDeviceList = new ArrayList<BluetoothDevice>();
 
 		mBTConnector = new BTConnector(this);
@@ -93,14 +116,22 @@ public class MyActivity extends Activity implements Callback {
 		mBTConnector.cancelDisCovery();
 		mBTConnector.startDiscovery();
 	}
-	
-	public void onConnectClick(View view){
-		mBTConnector.connect(null);
+
+	public void onConnectClick(View view) {
+		mBTConnector.connect(null).subscribe(new Action1<BTHandle>(){
+			@Override
+			public void call(BTHandle arg0) {
+				if(arg0 != null){
+					Toast.makeText(getApplicationContext(), "connected", Toast.LENGTH_SHORT).show();
+					arg0.receive(MyActivity.this.mHandler);
+				}
+			}
+		});
 		mConnect.setVisibility(View.GONE);
 		mDisconnect.setVisibility(View.VISIBLE);
 	}
-	
-	public void onDisconnectClick(View view){
+
+	public void onDisconnectClick(View view) {
 		mBTConnector.disconnect();
 		mConnect.setVisibility(View.VISIBLE);
 		mDisconnect.setVisibility(View.GONE);
@@ -111,7 +142,7 @@ public class MyActivity extends Activity implements Callback {
 		super.onDestroy();
 		mBTConnector.release();
 	}
-	
+
 	@Override
 	public void onListDataChange(Collection<BluetoothDevice> list) {
 		mDeviceList.clear();
@@ -121,16 +152,10 @@ public class MyActivity extends Activity implements Callback {
 		mAdapter.notifyDataSetChanged();
 	}
 
-	@Override
-	public void onDeviceConnected(BTHandle bthandle) {
-		bthandle.receive(mHanlder);
-	}
-	
-	Handler mHanlder = new Handler(Looper.getMainLooper()){
+	Handler mHandler = new Handler(Looper.getMainLooper()) {
 		@Override
 		public void handleMessage(Message msg) {
-			Log.i("btconnector", msg.what+":"+((String)msg.obj));
-			mText.setText((String)msg.obj);
+			mText.setText((String) msg.obj);
 		}
 	};
 }
