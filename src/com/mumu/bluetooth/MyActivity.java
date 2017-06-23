@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import com.mumu.bluetooth.BTConnector.BTHandle;
+import com.mumu.bluetooth.BTConnector.BTListener;
 import com.mumu.bluetooth.BTConnector.Callback;
 import com.mumu.bluetooth.R;
 import android.app.Activity;
@@ -22,9 +22,8 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 import rx.Subscriber;
-import rx.functions.Action1;
 
-public class MyActivity extends Activity implements Callback {
+public class MyActivity extends Activity implements Callback, BTListener {
 
 	private static final String TAG = "Bt_Activity";
 
@@ -53,7 +52,7 @@ public class MyActivity extends Activity implements Callback {
 
 		@Override
 		public void onNext(BTHandle arg0) {
-			if(arg0 != null){
+			if (arg0 != null) {
 				Toast.makeText(getApplicationContext(), "connected", Toast.LENGTH_SHORT).show();
 				arg0.receive(MyActivity.this.mHandler);
 			}
@@ -118,17 +117,8 @@ public class MyActivity extends Activity implements Callback {
 	}
 
 	public void onConnectClick(View view) {
-		mBTConnector.connect(null).subscribe(new Action1<BTHandle>(){
-			@Override
-			public void call(BTHandle arg0) {
-				if(arg0 != null){
-					Toast.makeText(getApplicationContext(), "connected", Toast.LENGTH_SHORT).show();
-					arg0.receive(MyActivity.this.mHandler);
-				}
-			}
-		});
-		mConnect.setVisibility(View.GONE);
-		mDisconnect.setVisibility(View.VISIBLE);
+		mBTConnector.connectDevice(null, this);
+		;
 	}
 
 	public void onDisconnectClick(View view) {
@@ -158,4 +148,18 @@ public class MyActivity extends Activity implements Callback {
 			mText.setText((String) msg.obj);
 		}
 	};
+
+	@Override
+	public void onConnect(BTHandle handle) {
+		if (handle != null) {
+			handle.receive(mHandler);
+			mHandler.post(new Runnable() {
+				@Override
+				public void run() {
+					mConnect.setVisibility(View.GONE);
+					mDisconnect.setVisibility(View.VISIBLE);
+				}
+			});
+		}
+	}
 }
