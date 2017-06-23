@@ -32,7 +32,7 @@ public class BTHandle {
 					for (int i = 0; i < read; i++) {
 						builder.append((char)bytes[i]);
 					}
-					if (bytes[read - 1] == (byte)'\n') {
+					if (bytes[read - 1] == (byte)'\n' && bytes[read - 2] == (byte)'\r') {
 						String msg = builder.toString();//new String(Arrays.copyOf(bytes, read));
 						Log.d(TAG, "receive = " + msg);
 						mHandler.obtainMessage(read, msg).sendToTarget();// builder.toString()));

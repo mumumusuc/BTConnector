@@ -38,6 +38,8 @@ public class MyActivity extends Activity implements Callback, BTListener {
 	private View mConnect, mDisconnect;
 
 	private TextView mText;
+	
+	private BTHandle mBTH;
 
 	private Subscriber<BTHandle> mSub = new Subscriber<BTHandle>() {
 		@Override
@@ -93,7 +95,7 @@ public class MyActivity extends Activity implements Callback, BTListener {
 	};
 
 	@Override
-	public void onCreate(Bundle savedInstanceState) {
+	public void onCreate(Bundle savedInstanceState) { 
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
 
@@ -146,13 +148,17 @@ public class MyActivity extends Activity implements Callback, BTListener {
 		@Override
 		public void handleMessage(Message msg) {
 			mText.setText((String) msg.obj);
+			if(mBTH != null){
+				mBTH.send((String) msg.obj);
+			}
 		}
 	};
 
 	@Override
 	public void onConnect(BTHandle handle) {
 		if (handle != null) {
-			handle.receive(mHandler);
+			mBTH = handle;
+			mBTH.receive(mHandler);
 			mHandler.post(new Runnable() {
 				@Override
 				public void run() {
