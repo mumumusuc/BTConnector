@@ -18,6 +18,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -38,6 +39,8 @@ public class MyActivity extends Activity implements Callback, BTListener {
 	private View mConnect, mDisconnect;
 
 	private TextView mText;
+	
+	private EditText mEdit;
 	
 	private BTHandle mBTH;
 
@@ -129,6 +132,12 @@ public class MyActivity extends Activity implements Callback, BTListener {
 		mDisconnect.setVisibility(View.GONE);
 	}
 
+	public void onSendClick(View view) {
+		if(mBTH != null){
+			mBTH.send("hello world \r\n");
+		}
+	}
+	
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
