@@ -3,7 +3,6 @@ package com.mumu.bluetooth;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
 import com.mumu.bluetooth.BTConnector.BTListener;
 import com.mumu.bluetooth.BTConnector.Callback;
 import com.mumu.bluetooth.R;
@@ -21,8 +20,6 @@ import android.widget.BaseAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
-import rx.Subscriber;
 
 public class MyActivity extends Activity implements Callback, BTListener {
 
@@ -39,30 +36,12 @@ public class MyActivity extends Activity implements Callback, BTListener {
 	private View mConnect, mDisconnect;
 
 	private TextView mText;
-	
+
 	private EditText mEdit;
-	
+
 	private BTHandle mBTH;
 
-	private Subscriber<BTHandle> mSub = new Subscriber<BTHandle>() {
-		@Override
-		public void onCompleted() {
-
-		}
-
-		@Override
-		public void onError(Throwable arg0) {
-
-		}
-
-		@Override
-		public void onNext(BTHandle arg0) {
-			if (arg0 != null) {
-				Toast.makeText(getApplicationContext(), "connected", Toast.LENGTH_SHORT).show();
-				arg0.receive(MyActivity.this.mHandler);
-			}
-		}
-	};
+	private PadView mPad;
 
 	private BaseAdapter mAdapter = new BaseAdapter() {
 
@@ -98,7 +77,7 @@ public class MyActivity extends Activity implements Callback, BTListener {
 	};
 
 	@Override
-	public void onCreate(Bundle savedInstanceState) { 
+	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
 
@@ -108,6 +87,7 @@ public class MyActivity extends Activity implements Callback, BTListener {
 		mConnect = findViewById(R.id.connect);
 		mDisconnect = findViewById(R.id.disconnect);
 		mText = (TextView) findViewById(R.id.text);
+		mPad = (PadView) findViewById(R.id.pad);
 
 		mDeviceList = new ArrayList<BluetoothDevice>();
 
@@ -123,21 +103,21 @@ public class MyActivity extends Activity implements Callback, BTListener {
 
 	public void onConnectClick(View view) {
 		mBTConnector.connectDevice(null, this);
-		;
 	}
 
 	public void onDisconnectClick(View view) {
 		mBTConnector.disconnect();
 		mConnect.setVisibility(View.VISIBLE);
 		mDisconnect.setVisibility(View.GONE);
+		mPad.setVisibility(View.GONE);
 	}
 
 	public void onSendClick(View view) {
-		if(mBTH != null){
+		if (mBTH != null) {
 			mBTH.send("hello world \r\n");
 		}
 	}
-	
+
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
@@ -156,8 +136,17 @@ public class MyActivity extends Activity implements Callback, BTListener {
 	Handler mHandler = new Handler(Looper.getMainLooper()) {
 		@Override
 		public void handleMessage(Message msg) {
-			mText.setText((String) msg.obj);
-			if(mBTH != null){
+			String str = (String) msg.obj;
+			mText.setText(str);
+			str = str.substring(0,str.length()-2);
+			Log.d("bt_pad", "str = "+str);
+			String[] coor = str.split(",");
+			if(coor.length == 2){
+				float x = Integer.parseInt(coor[0])/4096f;
+				float y = Integer.parseInt(coor[1])/4096f;
+				mPad.draw(x, y);
+			}
+			if (mBTH != null) {
 				mBTH.send((String) msg.obj);
 			}
 		}
@@ -173,6 +162,7 @@ public class MyActivity extends Activity implements Callback, BTListener {
 				public void run() {
 					mConnect.setVisibility(View.GONE);
 					mDisconnect.setVisibility(View.VISIBLE);
+					mPad.setVisibility(View.VISIBLE);
 				}
 			});
 		}

@@ -32,10 +32,13 @@ public class BTHandle {
 					for (int i = 0; i < read; i++) {
 						builder.append((char)bytes[i]);
 					}
-					if (bytes[read - 1] == (byte)'\n' && bytes[read - 2] == (byte)'\r') {
+					if (bytes[read - 1] == (byte)'\n' && bytes[read - 2] == (byte)'\r') {						
 						String msg = builder.toString();//new String(Arrays.copyOf(bytes, read));
 						Log.d(TAG, "receive = " + msg);
-						mHandler.obtainMessage(read, msg).sendToTarget();// builder.toString()));
+						String[] msgs = msg.split("\r\n");
+						for(String m: msgs){
+							mHandler.obtainMessage(read, m+"\r\n").sendToTarget();// builder.toString()));
+						}
 						builder.delete(0, builder.length());
 					}
 					Arrays.fill(bytes, (byte) 0);
